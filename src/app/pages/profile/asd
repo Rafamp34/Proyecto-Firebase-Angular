@@ -1,0 +1,402 @@
+import { Component, Inject, OnInit, OnDestroy } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
+import { LoadingController, ModalController, ToastController } from '@ionic/angular';
+import { Router } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
+import { BehaviorSubject, Subject, lastValueFrom, of } from 'rxjs';
+import { takeUntil, switchMap, catchError, filter, map } from 'rxjs/operators';
+import { BaseAuthenticationService } from 'src/app/core/services/impl/base-authentication.service';
+import { PlaylistsService } from 'src/app/core/services/impl/playlists.service';
+import { User } from 'src/app/core/models/user.model';
+import { Playlist } from 'src/app/core/models/playlist.model';
+import { BaseMediaService } from 'src/app/core/services/impl/base-media.service';
+import { EditProfileModalComponent } from '../../shared/components/edit-profile-modal/edit-profile-modal.component';
+import { UserService } from 'src/app/core/services/impl/user.service';
+import { PlaylistModalComponent } from '../../shared/components/playlist-modal/playlist-modal.component';
+import { ICollectionSubscription } from 'src/app/core/services/interfaces/collection-subscription.interface';
+import { COLLECTION_SUBSCRIPTION_TOKEN } from 'src/app/core/repositories/repository.tokens';
+
+function dataURLtoBlob(dataurl: string): Blob {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+}
+
+@Component({
+  selector: 'app-profile',
+  templateUrl: './profile.page.html',
+  styleUrls: ['./profile.page.scss'],
+})
+export class ProfilePage implements OnInit, OnDestroy {
+  page: number = 1;
+  pageSize: number = 25;
+  pages: number = 0;
+
+  user?: User | null;
+  followingCount = 4;
+  private _playlists = new BehaviorSubject<Playlist[]>([]);
+  playlists$ = this._playlists.asObservable();
+  
+  private destroy$ = new Subject<void>();
+
+  formGroup: FormGroup;
+  changePasswordForm: FormGroup;
+  profilePictureControl = new FormControl('');
+
+  constructor(
+    private authService: BaseAuthenticationService,
+    private loadingController: LoadingController,
+    private toastController: ToastController,
+    private translateService: TranslateService,
+    private playlistsService: PlaylistsService,
+    private router: Router,
+    private modalCtrl: ModalController,
+    private fb: FormBuilder,
+    private mediaService: BaseMediaService,
+    private userService: UserService,
+    private authSvc: BaseAuthenticationService,
+    @Inject(COLLECTION_SUBSCRIPTION_TOKEN)
+    private collectionSubscriptionSvc: ICollectionSubscription<Playlist>
+  ) {
+    this.formGroup = this.fb.group({
+      username: ['', [Validators.required]],
+      email: ['', [Validators.required, Validators.email]],
+      image: ['']
+    });
+
+    this.changePasswordForm = this.fb.group({
+      currentPassword: ['', [Validators.required]],
+      newPassword: ['', [Validators.required]],
+      confirmPassword: ['', [Validators.required]]
+    });
+  }
+
+  ngOnInit() {
+    console.log('ProfilePage: ngOnInit started');
+    this.setupCollectionSubscriptions();
+    this.loadUserData();
+  }
+
+  ngOnDestroy() {
+    console.log('ProfilePage: ngOnDestroy called');
+    // Unsubscribe from Firebase collections
+    this.collectionSubscriptionSvc.unsubscribe('playlists');
+    
+    // Complete the destroy subject to stop all ongoing subscriptions
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private setupCollectionSubscriptions() {
+    console.log('ProfilePage: Setting up collection subscriptions');
+    
+    this.collectionSubscriptionSvc
+      .subscribe('playlists')
+      .pipe(
+        takeUntil(this.destroy$),
+        switchMap(async change => {
+          // Obtener el usuario actual
+          const currentUser = await this.authSvc.getCurrentUser();
+          
+          // Solo procesar cambios para playlists del usuario actual
+          if (currentUser && change.data && 
+              change.data.users_IDS && 
+              change.data.users_IDS.includes(currentUser.id)) {
+            return change;
+          }
+          
+          return null;
+        })
+      )
+      .subscribe(change => {
+        if (!change) return;
+
+        console.log('Playlist collection change:', change);
+        const currentPlaylists = this._playlists.value;
+        
+        switch (change.type) {
+          case 'added':
+            if (change.data && !currentPlaylists.some(p => p.id === change.id)) {
+              console.log('Adding playlist:', change.data);
+              this._playlists.next([...currentPlaylists, change.data]);
+            }
+            break;
+          case 'modified':
+            if (change.data) {
+              const index = currentPlaylists.findIndex(p => p.id === change.id);
+              if (index !== -1) {
+                const updatedPlaylists = [...currentPlaylists];
+                updatedPlaylists[index] = change.data;
+                console.log('Updating playlist:', change.data);
+                this._playlists.next(updatedPlaylists);
+              }
+            }
+            break;
+          case 'removed':
+            console.log('Removing playlist:', change.id);
+            this._playlists.next(
+              currentPlaylists.filter(p => p.id !== change.id)
+            );
+            break;
+        }
+      });
+  }
+
+  private loadUserData() {
+    console.log('ProfilePage: loadUserData started');
+    
+    this.authService.user$.pipe(
+      takeUntil(this.destroy$),
+      filter(user => user !== undefined),
+      switchMap(user => {
+        if (!user) return of(null);
+        return this.userService.getById(user.id).pipe(
+          map(fullUser => {
+            console.log('Full user loaded:', fullUser);
+            return fullUser;
+          }),
+          catchError(error => {
+            console.error('Error loading user details:', error);
+            return of(null);
+          })
+        );
+      }),
+      switchMap(fullUser => {
+        if (!fullUser) {
+          console.error('No user found');
+          return of([]);
+        }
+        
+        this.user = fullUser;
+        
+        // Cargar playlists directamente usando getByUserId
+        return this.playlistsService.getByUserId(fullUser.id).pipe(
+          map(playlists => {
+            console.log('Playlists loaded:', playlists);
+            return playlists || [];
+          }),
+          catchError(error => {
+            console.error('Error loading playlists:', error);
+            return of([]);
+          })
+        );
+      })
+    ).subscribe({
+      next: (playlists) => {
+        console.log('Setting playlists:', playlists);
+        this._playlists.next(playlists);
+      },
+      error: (error) => {
+        console.error('Critical error:', error);
+        this.showErrorToast('COMMON.ERROR.LOAD');
+      }
+    });
+  }
+
+  private loadPlaylists() {
+    if (!this.user) return;
+
+    console.log('Loading playlists for user:', this.user.id);
+    this.playlistsService.getByUserId(this.user.id).subscribe({
+      next: (playlists: Playlist[] | null) => {
+        console.log('Loaded playlists:', playlists);
+        this._playlists.next(playlists ?? []);
+      },
+      error: (err) => {
+        console.error('Error loading playlists:', err);
+        this.showErrorToast('COMMON.ERROR.LOAD');
+      }
+    });
+  }
+
+  // Resto de los métodos existentes... (onPhotoClick, onProfilePictureChange, etc.)
+
+  async openPlaylistModal() {
+    const user = await this.authSvc.getCurrentUser();
+    if (!user) {
+      console.error('No user found');
+      return;
+    }
+
+    const modal = await this.modalCtrl.create({
+      component: PlaylistModalComponent,
+      componentProps: {},
+      cssClass: 'custom-modal spotify-theme'
+    });
+
+    modal.onDidDismiss().then((result) => {
+      if (result.role === 'create') {
+        const newPlaylist: Playlist = {
+          name: result.data.name,
+          author: user.username,
+          duration: '0:00',
+          song_IDS: [],
+          users_IDS: [user.id],
+          ...(result.data.image && {
+            image: {
+              url: result.data.image.url,
+              thumbnail: result.data.image.url,
+              large: result.data.image.url,
+              medium: result.data.image.url,
+              small: result.data.image.url
+            }
+          })
+        };
+
+        this.playlistsService.add(newPlaylist).subscribe({
+          next: () => {
+            // Disparar recarga de playlists
+            this.loadUserData();
+          },
+          error: (err) => {
+            console.error('Error creating playlist:', err);
+            this.showErrorToast('PLAYLIST.ERRORS.LOAD');
+          }
+        });
+      }
+    });
+
+    await modal.present();
+  }
+
+  // Métodos de manejo de toasts y otros existentes...
+  private async showErrorToast(message: string) {
+    const toast = await this.toastController.create({
+      message: await lastValueFrom(this.translateService.get(message)),
+      duration: 3000,
+      position: 'bottom',
+      color: 'danger'
+    });
+    await toast.present();
+  }
+
+  // Resto de los métodos como logout, onPhotoClick, etc. permanecen igual
+  logout() {
+    this.authService.signOut().subscribe(() => {
+      this.router.navigate(['/login']);
+    });
+  }
+
+  async openEditProfileModal() {
+    console.log('Opening modal with user:', this.user);
+    const modal = await this.modalCtrl.create({
+      component: EditProfileModalComponent,
+      componentProps: {
+        user: this.user,
+        profile: this.formGroup.value
+      },
+      cssClass: 'custom-modal'
+    });
+    return await modal.present();
+  }
+
+  async onPhotoClick() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    
+    fileInput.onchange = async (e: any) => {
+      if (e.target?.files && e.target.files.length > 0) {
+        const file = e.target.files[0];
+        
+        try {
+          const loadingElement = await this.loadingController.create();
+          await loadingElement.present();
+          
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            try {
+              if (typeof reader.result === 'string') {
+                await this.onProfilePictureChange(reader.result);
+              }
+            } catch (error) {
+              console.error('Error processing image:', error);
+              this.showErrorToast('COMMON.ERROR.UPLOAD');
+            } finally {
+              loadingElement.dismiss();
+            }
+          };
+          reader.readAsDataURL(file);
+          
+        } catch (error) {
+          console.error(error);
+          this.showErrorToast('COMMON.ERROR.UPLOAD');
+        }
+      }
+    };
+    
+    fileInput.click();
+  }
+
+  // Método para cambiar la imagen de perfil
+  private async onProfilePictureChange(newPicture: string) {
+    if (!this.user?.id) return;
+  
+    const loadingElement = await this.loadingController.create({
+      message: await lastValueFrom(this.translateService.get('COMMON.LOADING'))
+    });
+  
+    try {
+      await loadingElement.present();
+  
+      if (newPicture) {
+        const blob = dataURLtoBlob(newPicture);
+        console.log('Blob created:', blob);
+        
+        const uploadResult = await lastValueFrom(this.mediaService.upload(blob));
+        console.log('Upload result:', uploadResult);
+        
+        if (uploadResult && uploadResult[0]) {
+          const imageUrl = uploadResult[0] as unknown as string;
+          console.log('Image URL:', imageUrl);
+  
+          const updateData: Partial<User> = {
+            image: {
+              url: imageUrl,
+              large: imageUrl,
+              medium: imageUrl,
+              small: imageUrl,
+              thumbnail: imageUrl
+            }
+          };
+  
+          const updatedUser = await lastValueFrom(this.userService.updateProfile(this.user.id, updateData));
+          
+          if (updatedUser) {
+            this.user = {
+              ...this.user,
+              ...updatedUser,
+              image: updateData.image
+            };
+            
+            this.profilePictureControl.setValue(imageUrl);
+            console.log('Updated user image:', this.user.image);
+          }
+  
+          await this.showSuccessToast('PROFILE.PHOTO_UPDATED');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating profile picture:', error);
+      await this.showErrorToast('COMMON.ERROR.UPLOAD');
+    } finally {
+      await loadingElement.dismiss();
+    }
+  }
+
+  private async showSuccessToast(message: string) {
+    const toast = await this.toastController.create({
+      message: await lastValueFrom(this.translateService.get(message)),
+      duration: 3000,
+      position: 'bottom',
+      color: 'success'
+    });
+    await toast.present();
+  }
+}

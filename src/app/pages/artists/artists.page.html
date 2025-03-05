@@ -1,0 +1,30 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Artists</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="onAddArtist()">
+        <ion-icon name="add-outline"></ion-icon>
+        Add Artist
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="artists-grid">
+    <app-artist-grid-card
+      *ngFor="let artist of artists$ | async"
+      [artist]="artist"
+      (edit)="onUpdateArtist($event)"
+      (delete)="onDeleteArtist($event)"
+      (select)="onSelectArtist($event)">
+    </app-artist-grid-card>
+  </div>
+
+  <ion-infinite-scroll (ionInfinite)="onIonInfinite($event)">
+    <ion-infinite-scroll-content></ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>
