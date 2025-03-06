@@ -14,4 +14,4 @@
 ## Demonstration
 Check out this video demonstration of UMusic in action:
 
-[![UMusic Demo](https://img.youtube.com/vi/Xk_MkFIB4eM/0.jpg)](https://www.youtube.com/watch?v=Xk_MkFIB4eM)
+[![UMusic Demo]([https://www.youtube.com/watch?v=Xk_MkFIB4e)](https://youtu.be/ByI1lBVQtJE))
