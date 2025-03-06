@@ -1,4 +1,3 @@
-// src/app/shared/pipes/playlist-duration.pipe.ts
 import { Pipe, PipeTransform } from '@angular/core';
 import { Song } from '../../core/models/song.model';
 
@@ -11,14 +10,37 @@ export class PlaylistDurationPipe implements PipeTransform {
       return format === 'short' ? '0:00' : '0 min';
     }
 
+    console.log('Playlist songs for duration calculation:', songs);
+
     const totalSeconds = songs.reduce((acc, song) => {
-      const [mins, secs] = song.duration.split(':').map(Number);
-      return acc + (mins * 60 + secs);
+      let songDuration = 0;
+      if (typeof song.duration === 'string' && song.duration.includes(':')) {
+        const [mins, secs] = song.duration.split(':').map(Number);
+        songDuration = mins * 60 + secs;
+      } 
+      else if (typeof song.duration === 'number') {
+        songDuration = song.duration;
+      }
+      else if (typeof song.duration === 'string' && !isNaN(Number(song.duration))) {
+        songDuration = Number(song.duration);
+      }
+      else {
+        console.warn(`Unexpected duration format for song: ${song.name}`, song.duration);
+        return acc;
+      }
+
+      console.log(`Calculated song duration for ${song.name}:`, songDuration);
+      return acc + songDuration;
     }, 0);
 
-    return format === 'short' ? 
+    console.log('Total playlist duration in seconds:', totalSeconds);
+
+    const result = format === 'short' ? 
       this.formatShortDuration(totalSeconds) : 
       this.formatLongDuration(totalSeconds);
+
+    console.log('Formatted duration:', result);
+    return result;
   }
 
   private formatShortDuration(totalSeconds: number): string {
