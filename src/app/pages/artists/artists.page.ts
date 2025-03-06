@@ -80,20 +80,18 @@ export class ArtistsPage implements OnInit {
   
     modal.onDidDismiss().then((result) => {
       if (result.role === 'update') {
-        const formData = result.data; // Obtén el FormData enviado desde el modal
+        const formData = result.data; 
   
-        console.log('Datos actualizados:', formData); // Verifica los datos actualizados
+        console.log('Datos actualizados:', formData); 
   
-        // Llama al servicio para actualizar el artista
         this.artistsSvc.update(artist.id, formData).subscribe({
           next: (updatedArtist) => {
-            console.log('Artista actualizado:', updatedArtist); // Verifica el artista devuelto por el servidor
-            // Actualiza la lista de artistas con el objeto devuelto por el servidor
+            console.log('Artista actualizado:', updatedArtist); 
             const currentArtists = this._artists.value;
             const index = currentArtists.findIndex(a => a.id === artist.id);
             if (index !== -1) {
-              currentArtists[index] = updatedArtist; // Reemplaza el artista antiguo con el actualizado
-              this._artists.next([...currentArtists]); // Notifica el cambio
+              currentArtists[index] = updatedArtist; 
+              this._artists.next([...currentArtists]);
             }
           },
           error: (err) => {

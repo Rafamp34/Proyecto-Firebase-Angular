@@ -5,7 +5,8 @@
     "ENGLISH": "Inglés",
     "ERROR": {
       "LOAD": "Error al cargar los datos",
-      "SAVE": "Error al guardar los cambios"
+      "SAVE": "Error al guardar los cambios",
+      "UPLOAD": "Error al subir la imagen"
     },
     "SUCCESS": {
       "SAVE": "Cambios guardados correctamente"
@@ -15,7 +16,8 @@
     "SECURITY": "Seguridad",
     "CANCEL": "Cancelar",
     "DELETE": "Eliminar",
-    "CLOSE": "Cerrar"
+    "CLOSE": "Cerrar",
+    "LOADING": "Cargando..."
   },
   "MENU": {
     "TITLE": "Menú",
@@ -36,16 +38,21 @@
     "ALBUM": "Álbum",
     "DURATION": "Duración",
     "SEARCH_PLACEHOLDER": "Buscar canción",
+    "NO_SONGS": "No se encontraron canciones",
+    "ADD_FIRST_SONG": "¡Añade tu primera canción!",
+    "REORDERING": "Reordenando canciones...",
     "ERRORS": {
       "NAME_REQUIRED": "El nombre es obligatorio",
       "AUTHOR_REQUIRED": "El autor es obligatorio",
       "DURATION_REQUIRED": "La duración es obligatoria",
-      "DURATION_FORMAT": "Formato inválido. Use mm:ss (ej: 03:45)"
+      "DURATION_FORMAT": "Formato inválido. Use mm:ss (ej: 03:45)",
+      "REORDER": "Error al reordenar canciones"
     },
     "SUCCESS": {
       "CREATE": "Canción creada correctamente",
       "UPDATE": "Canción actualizada correctamente",
-      "DELETE": "Canción eliminada correctamente"
+      "DELETE": "Canción eliminada correctamente",
+      "REORDERED": "Canciones reordenadas correctamente"
     },
     "MESSAGES": {
       "DELETE_CONFIRM": "¿Está seguro que desea eliminar esta canción?"
@@ -69,6 +76,10 @@
       "MESSAGE": "Copia el enlace para compartir esta playlist",
       "COPY": "Copiar"
     },
+    "MESSAGESS": {
+      "DELETE_CONFIRM": "Eliminar playlist",
+      "DELETE_CONFIRM_MESSAGE": "¿Estás seguro de que quieres eliminar {name}?"
+    },
     "REMOVE_SONG": {
       "HEADER": "¿Eliminar canción?",
       "MESSAGE": "¿Estás seguro de que quieres eliminar esta canción de la playlist?"
@@ -77,7 +88,11 @@
       "SONG_ADDED": "Canción añadida correctamente",
       "SONG_UPDATED": "Canción actualizada correctamente",
       "SONG_REMOVED": "Canción eliminada correctamente",
-      "LINK_COPIED": "Enlace copiado al portapapeles"
+      "LINK_COPIED": "Enlace copiado al portapapeles",
+      "DELETE": "Playlist eliminada correctamente",
+      "CREATE": "Playlist creada correctamente",
+      "UPDATE": "Playlist actualizada correctamente",
+      "REORDERED": "Playlist reordenada correctamente"
     },
     "ERRORS": {
       "LOAD": "Error al cargar la playlist",
@@ -85,10 +100,14 @@
       "SONG_REMOVE": "Error al eliminar la canción",
       "NAME_REQUIRED": "El nombre es obligatorio",
       "AUTHOR_REQUIRED": "El autor es obligatorio",
-      "DURATION_REQUIRED": "La duración es obligatoria"
+      "DURATION_REQUIRED": "La duración es obligatoria",
+      "DELETE": "Error al eliminar la playlist",
+      "CREATE": "Error al crear la playlist",
+      "UPDATE": "Error al actualizar la playlist",
+      "REORDER": "Error al reordenar la playlist"
     },
     "MESSAGES": {
-      "DELETE_CONFIRM": "¿Está seguro que desea eliminar esta lista?"
+      "DELETE_CONFIRM": "Eliminar playlist"
     }
   },
   "PROFILE": {
@@ -109,7 +128,8 @@
     "USERNAME": "Nombre de usuario",
     "EMAIL": "Correo electrónico",
     "SAVE": "Guardar",
-    "CREATE_PLAYLIST": "Crear lista de reproducción"
+    "CREATE_PLAYLIST": "Crear lista de reproducción",
+    "PHOTO_UPDATED": "Foto de perfil actualizada correctamente"
   },
   "USER": {
     "NAME": "Nombre",
@@ -139,13 +159,14 @@
       "OLD_PASSWORD_REQUIRED": "La contraseña actual es obligatoria",
       "NEW_PASSWORD_REQUIRED": "La nueva contraseña es obligatoria",
       "PASSWORD_STRENGTH": "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial",
-      "PASSWORDS_MISMATCH": "Las contraseñas no coinciden"
+      "PASSWORDS_MISMATCH": "Las contraseñas no coinciden",
+      "OLD_PASSWORD_WRONG": "La contraseña actual es incorrecta"
     }
   },
   "HOME": {
     "SEARCH": "¿Qué quieres reproducir?",
     "ALL": "Todo",
-    "MUSIC": "Musica",
+    "MUSIC": "Música",
     "PODCATS": "Pódcasts",
     "RELEASE": "Lo nuevo hoy!!",
     "RECOMMENDED": "Recomendado para ti",

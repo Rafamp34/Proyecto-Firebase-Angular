@@ -5,7 +5,8 @@
     "ENGLISH": "English",
     "ERROR": {
       "LOAD": "Error loading data",
-      "SAVE": "Error saving changes"
+      "SAVE": "Error saving changes",
+      "UPLOAD": "Error uploading image"
     },
     "SUCCESS": {
       "SAVE": "Changes saved successfully"
@@ -15,7 +16,8 @@
     "SECURITY": "Security",
     "CANCEL": "Cancel", 
     "DELETE": "Delete",
-    "CLOSE": "Close"
+    "CLOSE": "Close",
+    "LOADING": "Loading..."
   },
   "MENU": {
     "TITLE": "Menu",
@@ -36,16 +38,21 @@
     "ALBUM": "Album",
     "DURATION": "Duration",
     "SEARCH_PLACEHOLDER": "Search song",
+    "NO_SONGS": "No songs found",
+    "ADD_FIRST_SONG": "Add your first song!",
+    "REORDERING": "Reordering songs...",
     "ERRORS": {
       "NAME_REQUIRED": "Name is required",
       "AUTHOR_REQUIRED": "Author is required",
       "DURATION_REQUIRED": "Duration is required",
-      "DURATION_FORMAT": "Invalid format. Use mm:ss (e.g. 03:45)"
+      "DURATION_FORMAT": "Invalid format. Use mm:ss (e.g. 03:45)",
+      "REORDER": "Error reordering songs"
     },
     "SUCCESS": {
       "CREATE": "Song created successfully",
       "UPDATE": "Song updated successfully",
-      "DELETE": "Song deleted successfully"
+      "DELETE": "Song deleted successfully",
+      "REORDERED": "Songs reordered successfully"
     },
     "MESSAGES": {
       "DELETE_CONFIRM": "Are you sure you want to delete this song?"
@@ -73,11 +80,19 @@
       "HEADER": "Remove song?",
       "MESSAGE": "Are you sure you want to remove this song from the playlist?"
     },
+    "MESSAGESS": {
+      "DELETE_CONFIRM": "Delete playlist",
+      "DELETE_CONFIRM_MESSAGE": "Are you sure you want to delete {name}?"
+    },
     "SUCCESS": {
       "SONG_ADDED": "Song added successfully",
       "SONG_UPDATED": "Song updated successfully",
       "SONG_REMOVED": "Song removed successfully",
-      "LINK_COPIED": "Link copied to clipboard"
+      "LINK_COPIED": "Link copied to clipboard",
+      "DELETE": "Playlist deleted successfully",
+      "CREATE": "Playlist created successfully",
+      "UPDATE": "Playlist updated successfully",
+      "REORDERED": "Playlist reordered successfully"
     },
     "ERRORS": {
       "LOAD": "Error loading playlist",
@@ -85,10 +100,14 @@
       "SONG_REMOVE": "Error removing song",
       "NAME_REQUIRED": "Name is required",
       "AUTHOR_REQUIRED": "Author is required",
-      "DURATION_REQUIRED": "Duration is required"
+      "DURATION_REQUIRED": "Duration is required",
+      "DELETE": "Error deleting playlist",
+      "CREATE": "Error creating playlist",
+      "UPDATE": "Error updating playlist",
+      "REORDER": "Error reordering playlist"
     },
     "MESSAGES": {
-      "DELETE_CONFIRM": "Are you sure you want to delete this playlist?"
+      "DELETE_CONFIRM": "Delete playlist"
     }
   },
   "PROFILE": {
@@ -109,7 +128,8 @@
     "USERNAME": "Username",
     "EMAIL": "Email",
     "SAVE": "Save",
-    "CREATE_PLAYLIST": "Create playlist"
+    "CREATE_PLAYLIST": "Create playlist",
+    "PHOTO_UPDATED": "Profile photo updated successfully"
   },
   "USER": {
     "NAME": "First Name",
@@ -139,7 +159,8 @@
       "OLD_PASSWORD_REQUIRED": "Current password is required",
       "NEW_PASSWORD_REQUIRED": "New password is required",
       "PASSWORD_STRENGTH": "Password must have at least 8 characters, one uppercase, one lowercase, one number and one special character",
-      "PASSWORDS_MISMATCH": "Passwords do not match"
+      "PASSWORDS_MISMATCH": "Passwords do not match",
+      "OLD_PASSWORD_WRONG": "Current password is incorrect"
     }
   },
   "HOME": {

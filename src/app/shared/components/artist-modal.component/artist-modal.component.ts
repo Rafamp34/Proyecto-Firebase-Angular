@@ -30,7 +30,6 @@ export class ArtistModalComponent  {
         songs_IDS: _artist.songs_IDS || []
       });
       
-      // Cargar las canciones seleccionadas
       if (_artist.songs_IDS?.length) {
         this.loadSelectedSongs(_artist.songs_IDS);
       }
@@ -101,7 +100,6 @@ export class ArtistModalComponent  {
       try {
         const formData = { ...this.formGroup.value };
         
-        // Manejar la imagen si ha sido modificada
         if (this.formGroup.get('image')?.dirty && formData.image) {
           try {
             const response = await fetch(formData.image);

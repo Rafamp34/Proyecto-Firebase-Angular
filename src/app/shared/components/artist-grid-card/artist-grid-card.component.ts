@@ -13,7 +13,7 @@ export class ArtistGridCardComponent {
   @Output() select = new EventEmitter<Artist>();
 
   isHovered = false;
-  isPlaying = false; // Agrega esta propiedad
+  isPlaying = false; 
 
   onEdit() {
     this.edit.emit(this.artist);

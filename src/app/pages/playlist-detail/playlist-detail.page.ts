@@ -15,6 +15,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { ArtistsService } from 'src/app/core/services/impl/artists.service';
 import { User } from 'src/app/core/models/user.model';
 import { UserService } from 'src/app/core/services/impl/user.service';
+import { ShareService } from 'src/app/core/services/impl/share.service';
 
 interface SongWithArtists extends Song {
   artistNames?: string[];
@@ -52,7 +53,8 @@ export class PlaylistDetailPage implements OnInit {
     private toastCtrl: ToastController,
     private translate: TranslateService,
     private artistsSvc: ArtistsService,
-    private userService: UserService 
+    private userService: UserService,
+    private shareService: ShareService,
   ) { }
 
   async ngOnInit() {
@@ -313,32 +315,30 @@ export class PlaylistDetailPage implements OnInit {
   }
 
   async sharePlaylist() {
-    const alert = await this.alertCtrl.create({
-      header: await this.translate.get('PLAYLIST.SHARE.HEADER').toPromise(),
-      message: await this.translate.get('PLAYLIST.SHARE.MESSAGE').toPromise(),
-      inputs: [
-        {
-          name: 'link',
-          type: 'text',
-          value: window.location.href,
-        }
-      ],
-      buttons: [
-        {
-          text: await this.translate.get('PLAYLIST.SHARE.COPY').toPromise(),
-          handler: () => {
-            navigator.clipboard.writeText(window.location.href);
-            this.showToast('PLAYLIST.SUCCESS.LINK_COPIED');
-          }
-        },
-        {
-          text: await this.translate.get('COMMON.CLOSE').toPromise(),
-          role: 'cancel'
-        }
-      ]
-    });
-
-    await alert.present();
+    const playlist = this._playlist.value;
+    
+    if (!playlist) return;
+    
+    const title = playlist.name;
+    const text = `Check out this playlist: ${playlist.name} by ${playlist.author}`;
+    const url = window.location.href;
+    
+    try {
+      await this.shareService.shareItem({
+        title: title,
+        text: text,
+        url: url,
+        dialogTitle: 'Share Playlist'
+      });
+    } catch (error) {
+      console.error('Error sharing playlist:', error);
+      const toast = await this.toastCtrl.create({
+        message: 'Could not share playlist',
+        duration: 2000,
+        position: 'bottom'
+      });
+      await toast.present();
+    }
   }
 
   formatDuration(seconds: number): string {

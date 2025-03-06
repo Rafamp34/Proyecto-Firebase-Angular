@@ -1,9 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
-import { LoadingController, ModalController, ToastController } from '@ionic/angular';
+import { LoadingController, ModalController, ToastController, AlertController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { BehaviorSubject, Subject, lastValueFrom, of } from 'rxjs';
+import { BehaviorSubject, Subject, lastValueFrom, of, take } from 'rxjs';
 import { takeUntil, switchMap, catchError, filter, map } from 'rxjs/operators';
 import { BaseAuthenticationService } from 'src/app/core/services/impl/base-authentication.service';
 import { PlaylistsService } from 'src/app/core/services/impl/playlists.service';
@@ -40,8 +40,10 @@ export class ProfilePage implements OnInit, OnDestroy {
   followingCount = 4;
   private _playlists = new BehaviorSubject<Playlist[]>([]);
   playlists$ = this._playlists.asObservable();
+
+  private _currentUser = new BehaviorSubject<User | null>(null);
+  currentUser$ = this._currentUser.asObservable();
   
-  // Subject para gestionar las suscripciones
   private destroy$ = new Subject<void>();
 
   formGroup: FormGroup;
@@ -59,11 +61,11 @@ export class ProfilePage implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private mediaService: BaseMediaService,
     private userService: UserService,
-    private authSvc: BaseAuthenticationService
+    private authSvc: BaseAuthenticationService,
+    private alertCtrl: AlertController
   ) {
     console.log('ProfilePage: constructor called');
     
-    // Changed username to displayName to match EditProfileModalComponent
     this.formGroup = this.fb.group({
       displayName: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
@@ -90,31 +92,36 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     console.log('ProfilePage: ngOnDestroy called');
-    // Completar el Subject para cancelar todas las suscripciones
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   private loadUserData() {
     console.log('Loading user data...');
-    // Cargar usuario actual
     this.authService.getCurrentUser()
       .then(currentUser => {
         console.log('Current user:', currentUser);
         
-        // Si hay usuario, cargar sus detalles completos
         if (currentUser) {
           this.userService.getById(currentUser.id)
-            .pipe(takeUntil(this.destroy$))
+            .pipe(
+              take(1), 
+              takeUntil(this.destroy$)
+            )
             .subscribe({
               next: (fullUser) => {
                 console.log('Full user loaded:', fullUser);
-                this.user = fullUser;
-                
-                // Cargar playlists usando el displayName del usuario
                 if (fullUser) {
                   const displayName = fullUser.displayName || `${fullUser.name || ''} ${fullUser.surname || ''}`.trim();
-                  console.log('Using displayName for playlist loading:', displayName);
+                  
+                  const updatedUser = {
+                    ...fullUser,
+                    displayName
+                  };
+                  
+                  this.user = updatedUser;
+                  this._currentUser.next(updatedUser);
+                  
                   this.loadPlaylistsByAuthor(displayName);
                 } else {
                   console.error('Full user data is null or undefined');
@@ -146,22 +153,20 @@ export class ProfilePage implements OnInit, OnDestroy {
       return;
     }
     
-    // Usar método personalizado para carga por author
     this.loadPlaylistsByAuthorName(displayName);
   }
 
   private loadPlaylistsByAuthorName(authorName: string) {
     console.log('Searching playlists with author name:', authorName);
     
-    // Cargar todas las playlists y filtrar por autor
     this.playlistsService.getAll(1, 100)
       .pipe(
+        take(1),
         takeUntil(this.destroy$),
         map(response => {
           const allPlaylists = Array.isArray(response) ? response : response.data;
           console.log('Total playlists retrieved:', allPlaylists.length);
           
-          // Filtrar por nombre de autor - añadido chequeo de nulos
           const userPlaylists = allPlaylists.filter(playlist => {
             if (!playlist.author || !authorName) return false;
             
@@ -186,6 +191,69 @@ export class ProfilePage implements OnInit, OnDestroy {
       });
   }
 
+  async deletePlaylist(playlist: Playlist, event: Event) {
+    event.stopPropagation();
+    
+    if (!playlist || !playlist.id) {
+      console.error('Invalid playlist data', playlist);
+      return;
+    }
+  
+    const [headerText, messageBase, cancelText, deleteText] = await Promise.all([
+      this.translateService.get('PLAYLIST.MESSAGESS.DELETE_CONFIRM').toPromise(),
+      this.translateService.get('PLAYLIST.MESSAGESS.DELETE_CONFIRM_MESSAGE').toPromise(),
+      this.translateService.get('COMMON.CANCEL').toPromise(),
+      this.translateService.get('COMMON.DELETE').toPromise()
+    ]);
+  
+    const message = `${messageBase.replace('{name}', `"${playlist.name}"`)}`;
+  
+    const alert = await this.alertCtrl.create({
+      header: headerText,
+      message: message,
+      buttons: [
+        {
+          text: cancelText,
+          role: 'cancel'
+        },
+        {
+          text: deleteText,
+          role: 'destructive',
+          handler: () => {
+            this.performPlaylistDeletion(playlist);
+          }
+        }
+      ]
+    });
+  
+    await alert.present();
+  }
+  
+  private async performPlaylistDeletion(playlist: Playlist) {
+    const loading = await this.loadingController.create({
+      message: await this.translateService.get('COMMON.LOADING').toPromise()
+    });
+    await loading.present();
+  
+    this.playlistsService.delete(playlist.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          const currentPlaylists = this._playlists.getValue();
+          const updatedPlaylists = currentPlaylists.filter(p => p.id !== playlist.id);
+          this._playlists.next(updatedPlaylists);
+          
+          loading.dismiss();
+          this.showSuccessToast('PLAYLIST.SUCCESS.DELETE');
+        },
+        error: (error) => {
+          console.error('Error deleting playlist:', error);
+          loading.dismiss();
+          this.showErrorToast('PLAYLIST.ERRORS.DELETE');
+        }
+      });
+  }
+
   async openPlaylistModal() {
     const user = await this.authSvc.getCurrentUser();
     if (!user) {
@@ -201,13 +269,11 @@ export class ProfilePage implements OnInit, OnDestroy {
 
     modal.onDidDismiss().then((result) => {
       if (result.role === 'create') {
-        // Determinar el autor - cambiado username a displayName
         let author = user.displayName || '';
         if (this.user) {
           author = this.user.displayName || `${this.user.name || ''} ${this.user.surname || ''}`.trim();
         }
         
-        // Verificar que author no sea vacío
         if (!author || author.trim() === '') {
           console.error('Cannot create playlist with empty author name');
           this.showErrorToast('PLAYLIST.ERRORS.CREATE');
@@ -216,7 +282,7 @@ export class ProfilePage implements OnInit, OnDestroy {
         
         const newPlaylist: Playlist = {
           name: result.data.name,
-          author: author.trim(), // Asegurarse de que no hay espacios extra
+          author: author.trim(), 
           duration: '0:00',
           song_IDS: [],
           users_IDS: user.id ? [user.id] : [],
@@ -238,7 +304,6 @@ export class ProfilePage implements OnInit, OnDestroy {
           .subscribe({
             next: (createdPlaylist) => {
               console.log('Playlist created successfully:', createdPlaylist);
-              // Recargar playlists
               if (this.user) {
                 const displayName = this.user.displayName || `${this.user.name || ''} ${this.user.surname || ''}`.trim();
                 this.loadPlaylistsByAuthor(displayName);
@@ -347,11 +412,14 @@ export class ProfilePage implements OnInit, OnDestroy {
           const updatedUser = await lastValueFrom(this.userService.updateProfile(this.user.id, updateData));
           
           if (updatedUser) {
-            this.user = {
+            const newUser = {
               ...this.user,
               ...updatedUser,
               image: updateData.image
             };
+            
+            this.user = newUser;
+            this._currentUser.next(newUser);
             
             this.profilePictureControl.setValue(imageUrl);
             console.log('Updated user image:', this.user.image);
@@ -387,33 +455,25 @@ export class ProfilePage implements OnInit, OnDestroy {
     
     modal.onDidDismiss().then(result => {
       if (result.role === 'updated' && result.data) {
-        // Actualizar el usuario con los datos devueltos
-        this.user = {
+        const updatedUser = {
           ...this.user,
           ...result.data
         };
         
-        if (result.data.image) {
-          if (result.data.image) {
-            if (this.user) {
-              this.user.image = { ...result.data.image };
-            }
-          }
-        }
+        this.user = updatedUser;
+        this._currentUser.next(updatedUser);
         
-        // Actualizar también el formulario si está disponible
         if (this.formGroup) {
           this.formGroup.patchValue({
-            displayName: this.user?.displayName || '',
-            email: this.user?.email || '',
-            image: this.user?.image?.url || ''
+            displayName: updatedUser.displayName || '',
+            email: updatedUser.email || '',
+            image: updatedUser.image?.url || ''
           });
         }
         
-        // Actualizar el autorName para las playlists si ha cambiado el displayName
-        if (this.user && this.user.displayName) {
+        if (updatedUser.displayName) {
           console.log('DisplayName updated, reloading playlists');
-          this.loadPlaylistsByAuthor(this.user.displayName);
+          this.loadPlaylistsByAuthor(updatedUser.displayName);
         }
       }
     });

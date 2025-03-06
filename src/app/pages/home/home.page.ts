@@ -43,7 +43,6 @@ export class HomePage implements OnInit, OnDestroy {
   private _currentUser = new BehaviorSubject<User | null>(null);
   currentUser$ = this._currentUser.asObservable();
 
-  // Subjects for subscriptions and cleanup
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -64,7 +63,6 @@ export class HomePage implements OnInit, OnDestroy {
     this.checkIfMobile();
     window.addEventListener('resize', this.checkIfMobile.bind(this));
   
-    // User data and authentication handling
     this.authSvc.user$.pipe(
       filter(user => user !== undefined),
       switchMap(user => {
@@ -88,7 +86,6 @@ export class HomePage implements OnInit, OnDestroy {
       }
     });
   
-    // Authentication and content loading
     this.authSvc.ready$.pipe(
       filter(ready => ready),
       switchMap(() => this.authSvc.authenticated$),
@@ -106,19 +103,15 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // Unsubscribe from Firebase collections
     this.collectionSubscriptionSvc.unsubscribe('playlists');
     this.collectionSubscriptionSvc.unsubscribe('songs');
     
-    // Complete the destroy subject to stop all ongoing subscriptions
     this.destroy$.next();
     this.destroy$.complete();
     
-    // Remove event listener
     window.removeEventListener('resize', this.checkIfMobile.bind(this));
   }
 
-  // Event Handlers
   onSearchChange(event: CustomEvent) {
     this.searchQuery = event.detail.value;
   }
@@ -143,7 +136,6 @@ export class HomePage implements OnInit, OnDestroy {
 
   openSong(song: Song) {
     console.log('Playing song:', song);
-    // TODO: Implement song playback logic
   }
 
   showAllSongs() {
@@ -159,10 +151,8 @@ export class HomePage implements OnInit, OnDestroy {
     console.log('Is Mobile:', this.isMobile);
   }
 
-  // Collection Subscription Setup
-  // Collection Subscription Setup
+
   private setupCollectionSubscriptions() {
-    // Subscribe to playlists collection changes
     this.collectionSubscriptionSvc
       .subscribe('playlists')
       .pipe(takeUntil(this.destroy$))
@@ -191,12 +181,10 @@ export class HomePage implements OnInit, OnDestroy {
         }
       });
 
-    // Subscribe to songs collection changes
     this.collectionSubscriptionSvc
       .subscribe('songs')
       .pipe(
         switchMap(async (change: any) => {
-          // Type guard to ensure we're dealing with a Song
           if (change.type !== 'removed' && change.data && this.isSong(change.data)) {
             const songsWithArtists = await this.enrichSongWithArtists([change.data]);
             return { ...change, data: songsWithArtists[0] };
@@ -209,7 +197,6 @@ export class HomePage implements OnInit, OnDestroy {
         const currentNewReleases = this._newReleases.value;
         const currentRecommendedSongs = this._recommendedSongs.value;
         
-        // Additional type check
         if (change.type !== 'removed' && change.data && this.isSong(change.data)) {
           const songData = change.data as SongWithArtists;
           
@@ -221,7 +208,6 @@ export class HomePage implements OnInit, OnDestroy {
               }
               break;
             case 'modified':
-              // Update in new releases
               const newReleasesIndex = currentNewReleases.findIndex(s => s.id === songData.id);
               if (newReleasesIndex !== -1) {
                 const updatedNewReleases = [...currentNewReleases];
@@ -229,7 +215,6 @@ export class HomePage implements OnInit, OnDestroy {
                 this._newReleases.next(updatedNewReleases);
               }
 
-              // Update in recommended songs
               const recommendedIndex = currentRecommendedSongs.findIndex(s => s.id === songData.id);
               if (recommendedIndex !== -1) {
                 const updatedRecommendedSongs = [...currentRecommendedSongs];
@@ -242,7 +227,6 @@ export class HomePage implements OnInit, OnDestroy {
       });
   }
   
-  // Content Loading Methods
   private loadUserContent() {
     this.authSvc.user$.pipe(
       filter(user => user !== undefined),
@@ -294,7 +278,6 @@ export class HomePage implements OnInit, OnDestroy {
     });
   }
 
-  // Type guard to check if an object is a Song
   private isSong(data: any): data is Song {
     return data 
       && typeof data === 'object' 
@@ -303,7 +286,6 @@ export class HomePage implements OnInit, OnDestroy {
       && 'duration' in data;
   }
 
-  // Enrich Songs with Artist Names
   private async enrichSongWithArtists(songs: Song[]): Promise<SongWithArtists[]> {
     const enrichedSongs: SongWithArtists[] = [];
     

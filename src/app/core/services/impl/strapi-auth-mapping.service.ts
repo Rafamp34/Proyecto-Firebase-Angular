@@ -109,7 +109,7 @@ export class StrapiAuthMappingService implements IAuthMapping {
     }
 
     me(response: StrapiMeResponse): User {
-        console.log('API Response:', response); // Depuración: Verifica la respuesta de la API
+        console.log('API Response:', response);
         return {
             id: response.id.toString(),
             username: response.username,

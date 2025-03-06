@@ -15,6 +15,7 @@ import { PlaylistDurationPipe } from './pipe/playlist-duration.pipte';
 import { SongGridCardComponent } from './components/song-grid-card/song-grid-card.component';
 import { DurationPipe } from './pipe/duration.pipe';
 import { ArtistGridCardComponent } from './components/artist-grid-card/artist-grid-card.component';
+import { DragDropDirective } from './directives/drag-drop.directive';
 
 @NgModule({
   declarations: [
@@ -30,7 +31,9 @@ import { ArtistGridCardComponent } from './components/artist-grid-card/artist-gr
     // Pipes
     PasswordVisibilityPipe,
     PlaylistDurationPipe,
-    DurationPipe
+    DurationPipe,
+    // Directives
+    DragDropDirective
   ],
   imports: [
     CommonModule,
@@ -53,7 +56,9 @@ import { ArtistGridCardComponent } from './components/artist-grid-card/artist-gr
     // Pipes
     PasswordVisibilityPipe,
     PlaylistDurationPipe,
-    DurationPipe
+    DurationPipe,
+    // Directives
+    DragDropDirective
 
   ]
 })

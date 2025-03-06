@@ -21,10 +21,19 @@
 </ion-header>
 
 <ion-content>
-  <!-- Grid view for larger screens -->
-  <ion-grid class="ion-hide-md-down">
+  <!-- Grid view for larger screens with drag & drop -->
+  <ion-grid class="ion-hide-md-down drag-container">
     <ion-row>
-      <ion-col size="6" size-md="3" size-lg="2" *ngFor="let song of songs$ | async">
+      <ion-col 
+        size="6" 
+        size-md="3" 
+        size-lg="2" 
+        *ngFor="let song of songs$ | async; let i = index"
+        appDragDrop
+        [appDragDropData]="song"
+        [appDragDropIndex]="i"
+        (itemDropped)="onSongReorder($event)"
+        class="song-grid-wrapper reorder-animation">
         <app-song-grid-card
           [song]="song"
           (edit)="onUpdateSong(song)"
@@ -35,9 +44,15 @@
     </ion-row>
   </ion-grid>
 
-  <!-- List view for mobile -->
-  <ion-list class="ion-hide-md-up">
-    <ion-item-sliding *ngFor="let song of songs$ | async">
+  <!-- List view for mobile with drag & drop -->
+  <ion-list class="ion-hide-md-up drag-container">
+    <ion-item-sliding 
+      *ngFor="let song of songs$ | async; let i = index"
+      appDragDrop
+      [appDragDropData]="song"
+      [appDragDropIndex]="i"
+      (itemDropped)="onSongReorder($event)"
+      class="reorder-animation">
       <ion-item>
         <ion-thumbnail slot="start">
           <img [src]="song.image?.thumbnail || 'assets/default-song.png'" />
@@ -48,6 +63,9 @@
           <p>{{song.album}}</p>
           <p class="duration">{{song.duration}}</p>
         </ion-label>
+        <ion-button fill="clear" slot="end" class="drag-handle">
+          <ion-icon name="reorder-two-outline"></ion-icon>
+        </ion-button>
       </ion-item>
       <ion-item-options>
         <ion-item-option color="primary" (click)="onUpdateSong(song)">

@@ -46,7 +46,6 @@ export class PlaylistModalComponent {
       users_IDS: [[]]
     });
 
-    // Añadir el ID del usuario actual a users_IDS
     this.authSvc.user$.subscribe(user => {
       if (user) {
         this.formGroup.patchValue({
@@ -72,7 +71,6 @@ export class PlaylistModalComponent {
       try {
         const formData = { ...this.formGroup.value };
         
-        // Manejar la imagen si ha sido modificada
         if (this.formGroup.get('image')?.dirty && formData.image) {
           try {
             const response = await fetch(formData.image);

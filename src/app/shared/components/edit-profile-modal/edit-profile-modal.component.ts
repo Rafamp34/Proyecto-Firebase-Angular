@@ -85,7 +85,6 @@ export class EditProfileModalComponent implements OnInit {
       });
       await toast.present();
       
-      // Modificado para devolver el usuario actualizado completo
       this.modalCtrl.dismiss({
         ...this.user,
         ...result,

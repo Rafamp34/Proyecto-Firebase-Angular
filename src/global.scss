@@ -100,3 +100,43 @@
     margin-top: 20px;
   }
 }
+
+/* Estilos para elementos arrastrables */
+[appDragDrop] {
+  cursor: grab;
+  transition: all 0.2s ease;
+  
+  /* Cuando se está arrastrando el elemento */
+  &.dragging {
+    opacity: 0.6;
+    transform: scale(0.95);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Cuando se está sobre un elemento destino */
+  &.drag-over {
+    background-color: rgba(42, 172, 22, 0.1);
+    border: 2px dashed rgba(42, 172, 22, 0.5);
+    transform: scale(1.02);
+  }
+}
+
+/* Animación para la reordenación */
+.reorder-animation {
+  transition: transform 0.3s ease;
+}
+
+/* Para listas */
+.drag-container {
+  padding: 10px 0;
+  
+  /* Espacio para la zona de drop */
+  &.has-drop-zone::after {
+    content: '';
+    display: block;
+    height: 50px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    margin-top: 10px;
+  }
+}

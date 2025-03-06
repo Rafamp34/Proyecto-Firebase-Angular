@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs';
-import { AlertController, ModalController, Platform } from '@ionic/angular';
+import { AlertController, LoadingController, ModalController, Platform, ToastController } from '@ionic/angular';
 import { SongsService } from '../../core/services/impl/songs.service';
 import { Song } from '../../core/models/song.model';
 import { Paginated } from '../../core/models/paginated.model';
@@ -39,7 +39,9 @@ export class SongsPage implements OnInit, OnDestroy {
     private translate: TranslateService,
     private alertCtrl: AlertController,
     private platform: Platform,
-    private authSvc: BaseAuthenticationService
+    private authSvc: BaseAuthenticationService,
+    private loadingCtrl: LoadingController,
+    private toastCtrl: ToastController
   ) {
     this.isWeb = this.platform.is('desktop');
     
@@ -47,6 +49,15 @@ export class SongsPage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadSongs();
+    
+    this.searchSubject.pipe(
+      takeUntil(this.destroy$),
+      debounceTime(500),
+      distinctUntilChanged()
+    ).subscribe(term => {
+      this.currentSearchTerm = term;
+      this.loadSongs(true);
+    });
   }
 
   ngOnDestroy() {
@@ -210,5 +221,30 @@ export class SongsPage implements OnInit, OnDestroy {
 
   onPlaySong(song: Song) {
     console.log('Playing song:', song);
+  }
+
+  /**
+   * Maneja el reordenamiento de canciones mediante drag & drop
+   */
+  async onSongReorder(event: {item: any, targetIndex: number, sourceIndex: number}) {
+    const songs = [...this._songs.value];
+    
+    if (event.sourceIndex === event.targetIndex) return;
+    
+    const movedSong = songs[event.sourceIndex];
+    
+    songs.splice(event.sourceIndex, 1);
+    
+    songs.splice(event.targetIndex, 0, movedSong);
+    
+    this._songs.next([...songs]);
+    
+    const toast = await this.toastCtrl.create({
+      message: await this.translate.get('SONG.REORDERING').toPromise() || 'Reordenando canciones...',
+      duration: 2000,
+      position: 'bottom'
+    });
+    await toast.present();
+  
   }
 }

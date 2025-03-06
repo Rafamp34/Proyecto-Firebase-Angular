@@ -90,7 +90,6 @@ export class SongModalComponent implements OnInit {
       try {
         const formData = { ...this.formGroup.value };
         
-        // Manejar la imagen si ha sido modificada
         if (this.formGroup.get('image')?.dirty && formData.image) {
           try {
             const response = await fetch(formData.image);

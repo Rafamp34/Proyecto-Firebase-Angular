@@ -30,6 +30,7 @@ export class FirebaseAuthenticationService extends BaseAuthenticationService {
   private auth;
   private db: Firestore;
   private _token: string | null = null;
+  private isUpdating = false;
 
   constructor(
     @Inject(FIREBASE_CONFIG_TOKEN) protected firebaseConfig: any,
@@ -40,14 +41,13 @@ export class FirebaseAuthenticationService extends BaseAuthenticationService {
     this.auth = getAuth(app);
     this.db = getFirestore(app);
 
-    // Escuchar cambios en el estado de autenticación
     onAuthStateChanged(this.auth, async (user) => {
       if (user) {
         try {
+          this.isUpdating = true;
           this._token = await user.getIdToken();
           this._authenticated.next(true);
 
-          // Obtener datos adicionales del usuario desde Firestore
           const userDoc = await getDoc(doc(this.db, 'users', user.uid));
           if (!userDoc.exists()) {
             throw new Error('User document not found in Firestore');
@@ -63,6 +63,10 @@ export class FirebaseAuthenticationService extends BaseAuthenticationService {
         } catch (error) {
           console.error('Error loading user data:', error);
           this._user.next(this.authMapping.me(user));
+        } finally {
+          setTimeout(() => {
+            this.isUpdating = false;
+          }, 100);
         }
       } else {
         this._token = null;
@@ -73,17 +77,20 @@ export class FirebaseAuthenticationService extends BaseAuthenticationService {
     });
   }
 
+  protected override updateCurrentUser(user: User) {
+    if (this.isUpdating) return;
+    console.log('Updating current user:', user);
+    this._user.next(user);
+  }
+
   async getCurrentUser(): Promise<User | undefined> {
-    // Esperar a que el servicio esté listo
     await firstValueFrom(this._ready.pipe(filter(ready => ready === true)));
   
-    // Obtener el usuario actual
     const user = this.auth.currentUser;
     if (!user) {
-      return undefined; // No hay usuario autenticado
+      return undefined; 
     }
   
-    // Obtener datos adicionales de Firestore
     const userDoc = await getDoc(doc(this.db, 'users', user.uid));
     if (!userDoc.exists()) {
       throw new Error('User document not found in Firestore');
@@ -128,16 +135,14 @@ export class FirebaseAuthenticationService extends BaseAuthenticationService {
       createUserWithEmailAndPassword(this.auth, email, password)
         .then(async (userCredential) => {
           try {
-            // Establecer el displayName en Firebase Auth
             await updateProfile(userCredential.user, { displayName });
   
-            // Crear el documento en Firestore
             const userRef = doc(this.db, 'users', userCredential.user.uid);
             const userData = {
               name: signUpPayload.name,
               surname: signUpPayload.surname,
               email: signUpPayload.email,
-              displayName, // Asignar displayName
+              displayName,
               gender: signUpPayload.gender || null,
               image: signUpPayload.image || null,
               createdAt: new Date(),
@@ -146,7 +151,6 @@ export class FirebaseAuthenticationService extends BaseAuthenticationService {
   
             await setDoc(userRef, userData);
   
-            // Combinar datos de auth y Firestore
             const enrichedUser = {
               ...userCredential.user,
               displayName,
@@ -156,7 +160,7 @@ export class FirebaseAuthenticationService extends BaseAuthenticationService {
             observer.complete();
           } catch (error) {
             console.error('Error creating user in Firestore:', error);
-            await userCredential.user.delete(); // Eliminar usuario de Auth si falla Firestore
+            await userCredential.user.delete();
             observer.error('Error creating user. Please try again.');
           }
         })
